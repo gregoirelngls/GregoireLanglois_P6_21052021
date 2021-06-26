@@ -12,6 +12,8 @@ const bodyParser = require('body-parser');
 const path = require('path');
 // Implémentation du système de sécurité
 const cors = require('cors'); 
+// Limite le nombre de connexion maximale pour eviter les attaques de force brute
+const rateLimit = require("express-rate-limit");
 
 // Importation des module pour protéger l'application des vulnérabilités (requêtes HTTP, DNS navigateur, en-têtes ...)
 const helmet = require('helmet');
@@ -26,12 +28,13 @@ const userRoutes = require('./routes/user')
 require('dotenv').config();
 
 // Mise en place de la méthode qui va nous permettre de communiquer avec la base de données mongodb.
-mongoose.connect('mongodb+srv://GregoirePierreLanglois:Gpl300593@cluster0.sfta0.mongodb.net/myFirstDatabase?retryWrites=true&w=majority',
-  { useCreateIndex: true,
-    useNewUrlParser: true,
-    useUnifiedTopology: true })
-  .then(() => console.log('Connexion à MongoDB réussie !'))
-  .catch(() => console.log('Connexion à MongoDB échouée !'));
+mongoose.connect(process.env.DB_URI, {
+  useCreateIndex: true,
+  useNewUrlParser: true,
+  useUnifiedTopology: true
+})
+.then(() => console.log('Connexion à MongoDB réussie !'))
+.catch(() => console.log('Connexion à MongoDB échouée !'));
 
 // Création de l'application "Express".
 const app = express();
@@ -48,6 +51,11 @@ app.use((req, res, next) => {
   next();
 });
 
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100 // limit each IP to 100 requests per windowMs
+});
+
 // Envoi des données (sous la forme d'un objet de données) au serveur 
 // on demande au serveur d'accepter ou de stocker ces données (objet), qui sont incluses dans le corps (req.body) de cette demande.
 app.use(bodyParser.urlencoded({extended: true}));
@@ -58,6 +66,9 @@ app.use(helmet());
 
 //Désactive la mise en cache du navigateur
 app.use(nocache());
+
+// Activation du nombre maximale de requête par minute.
+app.use(limiter);
 
 // Middleware permettant de charger les fichiers qui sont dans le repertoire images
 app.use('/images', express.static(path.join(__dirname, 'images')));

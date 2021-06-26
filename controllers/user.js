@@ -51,6 +51,7 @@ exports.login = (req, res, next) => {
           if (!valid) {
             return res.status(401).json({ error: 'Mot de passe incorrect !' });
           }
+
           // Si c'est vrai, on renvoie un statut 200 ainsi qu'un objet JSON avec un userID + un token
           res.status(200).json({ // Le serveur backend renvoie un token au frontend
             userId: user._id,
@@ -58,7 +59,7 @@ exports.login = (req, res, next) => {
             token: jwt.sign( // Permet d'encoder le TOKEN.
               { userId: user._id },
               // Encodage de l'userdID nécéssaire dans le cas où une requête transmettrait un userId (ex: modification d'une sauce)
-              'RANDOM_TOKEN_SECRET', // Clé d'encodage du token qui peut être rendue plus complexe en production
+              process.env.SECRET_KEY, // Clé d'encodage du token qui peut être rendue plus complexe en production
               // Argument de configuration avec une expiration au bout de 24h
               { expiresIn: '24h' }
             )
